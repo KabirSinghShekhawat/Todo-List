@@ -10,28 +10,45 @@ import {
   ScrollView
 } from 'react-native';
 import Task from './components/Task';
+import uuid from 'react-native-uuid';
+import AWS_ARN from './config/aws.config';
 
 export default function App() {
   const [task, setTask] = useState();
   const [taskItems, setTaskItems] = useState([]);
-  const [username, setUsername] = useState("");
 
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     Keyboard.dismiss();
-    setTaskItems([...taskItems, task])
+    const newTask = {
+      task: task,
+      id: uuid.v4()
+    }
+
+    await fetch(AWS_ARN, {
+      method: 'PUT',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: newTask.id,
+        task: newTask.task
+      })
+    });
+    setTaskItems([...taskItems, newTask])
     setTask(null);
   }
 
-  const completeTask = (index) => {
+  const completeTask = async (id) => {
+    await fetch(`${AWS_ARN}/${id}`, { method: 'DELETE' });
+
     let itemsCopy = [...taskItems];
-    itemsCopy.splice(index, 1);
+    itemsCopy = itemsCopy.filter(item => item.id !== id)
     setTaskItems(itemsCopy)
   }
 
   return (
     <View style={styles.container}>
-      {/* Added this scroll view to enable scrolling when list gets longer than the page */}
-
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1
@@ -47,8 +64,8 @@ export default function App() {
             {
               taskItems.map((item, index) => {
                 return (
-                  <TouchableOpacity key={index} onPress={() => completeTask(index)}>
-                    <Task text={item} />
+                  <TouchableOpacity key={index} onPress={() => completeTask(item.id)}>
+                    <Task text={item.task} key={item.id} />
                   </TouchableOpacity>
                 )
               })
@@ -74,20 +91,6 @@ export default function App() {
           <TouchableOpacity onPress={() => handleAddTask()}>
             <View style={{ ...styles.addWrapper, backgroundColor: '#0096FF' }}>
               <Text style={styles.addText}>+</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ flexDirection: 'row' }}>
-          <TextInput
-            style={styles.input}
-            placeholder={'Username'}
-            value={username}
-            onChangeText={text => setUsername(text)}
-          />
-          <TouchableOpacity onPress={() => console.log(username)}>
-            <View style={{ ...styles.addWrapper, backgroundColor: '#00A36C' }}>
-              <Text style={styles.addText}>Sync</Text>
             </View>
           </TouchableOpacity>
         </View>
