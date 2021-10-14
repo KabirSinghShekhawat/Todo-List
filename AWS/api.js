@@ -42,8 +42,7 @@ exports.handler = async (event, context) => {
             TableName: "cloud_comp_project",
             Item: {
               id: requestJSON.id,
-              task: requestJSON.task,
-              name: requestJSON.name
+              task: requestJSON.task
             }
           })
           .promise();
